@@ -1,0 +1,4 @@
+name = Example Ajax Form
+description = The example of how you can remove any additional fields
+core = 7.x
+package = Custom

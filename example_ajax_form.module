@@ -1,0 +1,125 @@
+<?php
+
+/**
+  * Implements hook_menu
+  */
+function example_ajax_form_menu() {
+  $items = array();
+  $items['examples/ajax_form'] = array(
+    'title' => "Example form",
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('example_ajax_form_new_form'),
+    'access callback' => TRUE,
+  );
+  
+  return $items;  
+}
+
+/**
+ * Building the example form.
+ */
+function example_ajax_form_new_form($form, &$form_state) {
+  $form['#tree'] = TRUE;
+  $form['first_name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('First name'),
+    '#description' => t("Enter Your first name"),
+    '#size' => 32,
+  );
+  $form['last_name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Last name'),
+    '#description' => t("Enter Your last name"),
+    '#size' => 32,
+  );
+  $form['email'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Email'),
+    '#description' => t('Enter Your email address'),
+    '#size' => 32,
+  );
+  $form['subscriptions_fieldset'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Please enter Your subscriptions:'),
+    '#prefix' => '<div id="subscription-wrapper">',
+    '#suffix' => '</div>',
+  );
+
+  if (empty($form_state['subscriptions_count'])) {
+    $form_state['subscriptions_count'] = 1;
+    $form_state['subscriptions_removed'] = array();
+  }
+  
+  for ($i = 1; $i <= $form_state['subscriptions_count']; $i++) {
+    if (in_array($i, $form_state['subscriptions_removed'])) {
+      continue;
+    }
+    
+    $form['subscriptions_fieldset'][$i] = array(
+      '#prefix' => "<div id='col-$i'>",
+      '#suffix' => '</div>',
+    );
+    $form['subscriptions_fieldset'][$i]['subsctiption_name'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Title'),
+      '#size' => 32,
+    );
+    $form['subscriptions_fieldset'][$i]['delete_item_row'] = array(
+      '#type' => 'checkbox',
+      '#title' => 'Delete',
+    );
+  }
+  $form['subscriptions_fieldset']['add_more'] = array(
+    '#type' => 'submit',
+    '#value' => t('Add More'),
+    '#submit' => array('example_ajax_form_new_form_add_more'),
+    '#ajax' => array(
+      'callback' => 'example_ajax_form_update',
+      'wrapper' => 'subscription-wrapper',
+    ),
+  );
+  $form['subscriptions_fieldset']['remove_product'] = array(
+   '#type' => 'submit',
+   '#value' => t('Remove'),
+   '#submit' => array('example_ajax_form_new_form_remove'),
+   '#ajax' => array(
+      'callback' => 'example_ajax_form_update',
+      'wrapper' => 'subscription-wrapper',
+    ),
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+  );
+
+  return $form;
+}
+
+/**
+ * AJAX callback: "Add more" button.
+ */
+function example_ajax_form_new_form_add_more($form, &$form_state) {
+  $form_state['subscriptions_count']++;
+  $form_state['rebuild'] = TRUE;
+}
+
+/**
+ * AJAX callback: "Remove" button.
+ */
+function example_ajax_form_new_form_remove($form, &$form_state) {
+  foreach ($form_state['values']['subscriptions_fieldset'] as $key => $item) {
+    if (is_numeric($key)) {
+      if (!empty($form_state['values']['subscriptions_fieldset'][$key]['delete_item_row'])) {
+        $form_state['subscriptions_removed'][] = $key;
+      }
+    }
+  }
+  $form_state['rebuild'] = TRUE;
+}
+
+/**
+ * AJAX callback: Update fieldset.
+ */
+function example_ajax_form_update($form, $form_state) {
+  return $form['subscriptions_fieldset'];
+}
